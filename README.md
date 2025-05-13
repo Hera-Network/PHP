@@ -1,7 +1,7 @@
 # PHP binaries & PHP build scripts for PocketMine-MP
 [![Build status](https://github.com/pmmp/php-build-scripts/actions/workflows/main.yml/badge.svg)](https://github.com/pmmp/php-build-scripts/actions/workflows/main.yml)
 
-These builds include libsnappy and ext-mongodb 
+These builds include libsnappy and ext-mongodb
 
 ## Prebuilt binaries
 ### Actively updated "latest" URLs
