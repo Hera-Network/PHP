@@ -1185,8 +1185,14 @@ write_out "PHP" "Downloading additional extensions..."
 
 get_pecl_extension "mongodb" "$EXT_MONGODB_VERSION"
 
+# zstd needs its bundled lib — clone with submodules
+echo -n "  zstd: downloading $EXT_ZSTD_VERSION..."
+git clone --branch v$EXT_ZSTD_VERSION --recursive \
+    https://github.com/kjdev/php-ext-zstd.git \
+    "$BUILD_DIR/php/ext/zstd" >> "$DIR/install.log" 2>&1
+write_done
+
 get_github_extension "snappy" "$EXT_SNAPPY_VERSION" "kjdev" "php-ext-snappy"
-get_github_extension "zstd" "$EXT_ZSTD_VERSION" "kjdev" "php-ext-zstd"
 
 get_github_extension "pmmpthread" "$EXT_PMMPTHREAD_VERSION" "pmmp" "ext-pmmpthread"
 
