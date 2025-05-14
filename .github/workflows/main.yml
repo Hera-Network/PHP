@@ -19,7 +19,7 @@ jobs:
         include:
           - pm-version-major: 5
             php-version-base: "8.3"
-            special-release: default-latest #default = best for PM5, latest = display as latest on GitHub 
+            special-release: default-latest  # 'default' = best for PM5, 'latest' = mark as latest release on GitHub
 
     uses: ./.github/workflows/main-pm-matrix.yml
     with:
@@ -33,7 +33,7 @@ jobs:
     name: Publish archive release
     needs: [all-builds]
     runs-on: ubuntu-24.04
-    if: ${{ github.ref_name == 'stable' && github.ref_type == 'branch' && !contains(github.event.head_commit.message, '[no release]') }}
+    if: ${{ github.ref_name == 'main' && github.ref_type == 'branch' && !contains(github.event.head_commit.message, '[no release]') }}
 
     steps:
       - name: Download artifacts
@@ -57,7 +57,6 @@ jobs:
             ${{ github.workspace }}/*PHP-*-PM*/*.tar.gz
             ${{ github.workspace }}/*PHP-*-Windows-PM*/*.zip
             ${{ github.workspace }}/*PHP-*.gdbinit/*.gdbinit
-
           name: PHP (Build ${{ github.run_number }}) - Archive
           tag: php-build-${{ github.run_number }}
           commit: ${{ github.sha }}
