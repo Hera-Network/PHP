@@ -1185,9 +1185,9 @@ write_out "PHP" "Downloading additional extensions..."
 
 get_pecl_extension "mongodb" "$EXT_MONGODB_VERSION"
 
-# zstd needs its bundled lib — clone with submodules
+# zstd extension needs its bundled lib — clone with submodules
 echo -n "  zstd: downloading $EXT_ZSTD_VERSION..."
-git clone --branch v$EXT_ZSTD_VERSION --recursive \
+git clone --branch "master" --recursive \
     https://github.com/kjdev/php-ext-zstd.git \
     "$BUILD_DIR/php/ext/zstd" >> "$DIR/install.log" 2>&1
 write_done
