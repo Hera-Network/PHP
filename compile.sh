@@ -18,6 +18,7 @@ LIBZIP_VERSION="1.10.1"
 SQLITE3_VERSION="3450200" #3.45.2
 LIBDEFLATE_VERSION="78051988f96dc8d8916310d8b24021f01bd9e102" #1.23 - see above note about "v" prefixes
 LIBSNAPPY_VER="1.2.1"
+LIBZSTD_VERSION="1.5.6"
 
 EXT_MONGODB_VERSION="2.0.0"
 EXT_PMMPTHREAD_VERSION="6.1.1"
@@ -25,6 +26,7 @@ EXT_YAML_VERSION="2.2.4"
 EXT_LEVELDB_VERSION="317fdcd8415e1566fc2835ce2bdb8e19b890f9f3" #release not tagged
 EXT_CHUNKUTILS2_VERSION="0.3.5"
 EXT_XDEBUG_VERSION="3.3.2"
+EXT_ZSTD_VERSION="0.12.3"
 EXT_IGBINARY_VERSION="3.2.16"
 EXT_SNAPPY_VERSION="ab8b2b7375641f47deb21d8e8ba1a00ea5364cf6"
 EXT_CRYPTO_VERSION="abbe7cbf869f96e69f2ce897271a61d32f43c7c0" #release not tagged
@@ -1089,6 +1091,7 @@ function build_libdeflate {
 cd "$LIB_BUILD_DIR"
 
 build_zlib
+build_zstd
 build_snappy
 build_gmp
 build_openssl
@@ -1144,6 +1147,7 @@ write_out "PHP" "Downloading additional extensions..."
 get_pecl_extension "mongodb" "$EXT_MONGODB_VERSION"
 
 get_github_extension "snappy" "$EXT_SNAPPY_VERSION" "kjdev" "php-ext-snappy"
+get_github_extension "zstd" "$EXT_ZSTD_VERSION" "kjdev" "php-ext-zstd"
 
 get_github_extension "pmmpthread" "$EXT_PMMPTHREAD_VERSION" "pmmp" "ext-pmmpthread"
 
@@ -1305,6 +1309,7 @@ $HAVE_MYSQLI \
 --enable-recursionguard \
 --enable-xxhash \
 --enable-arraydebug \
+--enable-zstd \
 --enable-encoding \
 $HAVE_VALGRIND \
 $CONFIGURE_FLAGS >> "$DIR/install.log" 2>&1
@@ -1471,3 +1476,42 @@ fi
 date >> "$DIR/install.log" 2>&1
 write_out "PocketMine" "You should start the server now using \"./start.sh\"."
 write_out "PocketMine" "If it doesn't work, please send the \"install.log\" file to the Bug Tracker."
+
+function build_zstd {
+	if [ "$DO_STATIC" == "yes" ]; then
+		local BUILD_SHARED_LIBS="OFF"
+	else
+		local BUILD_SHARED_LIBS="ON"
+	fi
+
+	write_library zstd "$LIBZSTD_VERSION"
+	local zstd_dir="./zstd-$LIBZSTD_VERSION"
+
+	if cant_use_cache "$zstd_dir"; then
+		rm -rf "$zstd_dir"
+		write_download
+		download_github_src "facebook/zstd" "v$LIBZSTD_VERSION" "zstd" | tar -zx >> "$DIR/install.log" 2>&1
+		write_configure
+
+		cd "$zstd_dir/build/cmake"
+		mkdir -p build
+		cd build
+
+		cmake .. 			-DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" 			-DCMAKE_POSITION_INDEPENDENT_CODE=ON 			-DCMAKE_BUILD_TYPE=Release 			-DBUILD_SHARED_LIBS=$BUILD_SHARED_LIBS 			DZSTD_BUILD_PROGRAMS=OFF 			DZSTD_BUILD_TESTS=OFF 			>> "$DIR/install.log" 2>&1 || { echo "CMake failed"; exit 1; }
+
+		write_compile
+		make -j "$THREADS" >> "$DIR/install.log" 2>&1 || { echo "Make failed"; exit 1; }
+		mark_cache
+	else
+		write_caching
+		cd "$zstd_dir/build/cmake/build"
+	fi
+
+	write_install
+	make install >> "$DIR/install.log" 2>&1
+	cd ../../../..
+	if [ "$DO_STATIC" != "yes" ]; then
+		rm -f "$INSTALL_DIR/lib/libzstd.a"
+	fi
+	write_done
+}
