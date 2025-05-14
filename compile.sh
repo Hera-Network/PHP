@@ -478,7 +478,7 @@ echo "}" >> test.c
 type $CC >> "$DIR/install.log" 2>&1 || { write_error "Please install \"$CC\""; exit 1; }
 
 if [ -z "$THREADS" ]; then
-	write_out "WARNING" "Only 1 thread is used by default. Increase thread count using -j (e.g. -j 4) to compile faster."	
+	write_out "WARNING" "Only 1 thread is used by default. Increase thread count using -j (e.g. -j 4) to compile faster."
 	THREADS=1;
 fi
 [ -z "$march" ] && march=native;
@@ -641,6 +641,45 @@ function build_zlib {
 	cd ..
 	if [ "$DO_STATIC" != "yes" ]; then
 		rm -f "$INSTALL_DIR/lib/libz.a"
+	fi
+	write_done
+}
+
+function build_zstd {
+	if [ "$DO_STATIC" == "yes" ]; then
+		local BUILD_SHARED_LIBS="OFF"
+	else
+		local BUILD_SHARED_LIBS="ON"
+	fi
+
+	write_library zstd "$LIBZSTD_VERSION"
+	local zstd_dir="./zstd-$LIBZSTD_VERSION"
+
+	if cant_use_cache "$zstd_dir"; then
+		rm -rf "$zstd_dir"
+		write_download
+		download_github_src "facebook/zstd" "v$LIBZSTD_VERSION" "zstd" | tar -zx >> "$DIR/install.log" 2>&1
+		write_configure
+
+		cd "$zstd_dir/build/cmake"
+		mkdir -p build
+		cd build
+
+		cmake .. 			-DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" 			-DCMAKE_POSITION_INDEPENDENT_CODE=ON 			-DCMAKE_BUILD_TYPE=Release 			-DBUILD_SHARED_LIBS=$BUILD_SHARED_LIBS 			DZSTD_BUILD_PROGRAMS=OFF 			DZSTD_BUILD_TESTS=OFF 			>> "$DIR/install.log" 2>&1 || { echo "CMake failed"; exit 1; }
+
+		write_compile
+		make -j "$THREADS" >> "$DIR/install.log" 2>&1 || { echo "Make failed"; exit 1; }
+		mark_cache
+	else
+		write_caching
+		cd "$zstd_dir/build/cmake/build"
+	fi
+
+	write_install
+	make install >> "$DIR/install.log" 2>&1
+	cd ../../../..
+	if [ "$DO_STATIC" != "yes" ]; then
+		rm -f "$INSTALL_DIR/lib/libzstd.a"
 	fi
 	write_done
 }
@@ -1476,42 +1515,3 @@ fi
 date >> "$DIR/install.log" 2>&1
 write_out "PocketMine" "You should start the server now using \"./start.sh\"."
 write_out "PocketMine" "If it doesn't work, please send the \"install.log\" file to the Bug Tracker."
-
-function build_zstd {
-	if [ "$DO_STATIC" == "yes" ]; then
-		local BUILD_SHARED_LIBS="OFF"
-	else
-		local BUILD_SHARED_LIBS="ON"
-	fi
-
-	write_library zstd "$LIBZSTD_VERSION"
-	local zstd_dir="./zstd-$LIBZSTD_VERSION"
-
-	if cant_use_cache "$zstd_dir"; then
-		rm -rf "$zstd_dir"
-		write_download
-		download_github_src "facebook/zstd" "v$LIBZSTD_VERSION" "zstd" | tar -zx >> "$DIR/install.log" 2>&1
-		write_configure
-
-		cd "$zstd_dir/build/cmake"
-		mkdir -p build
-		cd build
-
-		cmake .. 			-DCMAKE_INSTALL_PREFIX="$INSTALL_DIR" 			-DCMAKE_POSITION_INDEPENDENT_CODE=ON 			-DCMAKE_BUILD_TYPE=Release 			-DBUILD_SHARED_LIBS=$BUILD_SHARED_LIBS 			DZSTD_BUILD_PROGRAMS=OFF 			DZSTD_BUILD_TESTS=OFF 			>> "$DIR/install.log" 2>&1 || { echo "CMake failed"; exit 1; }
-
-		write_compile
-		make -j "$THREADS" >> "$DIR/install.log" 2>&1 || { echo "Make failed"; exit 1; }
-		mark_cache
-	else
-		write_caching
-		cd "$zstd_dir/build/cmake/build"
-	fi
-
-	write_install
-	make install >> "$DIR/install.log" 2>&1
-	cd ../../../..
-	if [ "$DO_STATIC" != "yes" ]; then
-		rm -f "$INSTALL_DIR/lib/libzstd.a"
-	fi
-	write_done
-}
